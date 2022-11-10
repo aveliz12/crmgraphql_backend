@@ -1,0 +1,104 @@
+const User = require("../models/User");
+const Product = require("../models/Product");
+const bcryptjs = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+require("dotenv").config({ path: "../variables.env" });
+
+const createToken = (user, wordSecret, expiresIn) => {
+  console.log(user);
+  const { id, email, name, lastName } = user;
+  return jwt.sign({ id, email, name, lastName }, wordSecret, { expiresIn }); //para relizar un nuevo jwt
+};
+
+//Resolvers
+const resolvers = {
+  Query: {
+    getUser: async (_, { token }) => {
+      const userId = await jwt.verify(token, process.env.SECRETWORD); //toma el token y verifica
+
+      return userId;
+    },
+    getProducts: async () => {
+      try {
+        const products = await Product.find({});
+        return products;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    getProductsById: async (_, { id }) => {
+      //Revisar si el producto existe
+      const product = await Product.findById(id);
+
+      if (!product) {
+        console.log("Prodcuto no encontrado");
+      }
+
+      return product;
+    },
+  },
+  Mutation: {
+    //USERS
+    newUser: async (_, { input }) => {
+      const { email, password } = input;
+
+      //Revisar si el usuario ya está registrado
+      const existUser = await User.findOne({ email });
+      if (existUser) {
+        throw new Error("El usuario y está registrado");
+      }
+
+      //Hashear el password
+      const salt = await bcryptjs.genSaltSync(10); //si se le pone 12 hace el hash un poco mas tardado de decifrar y consume mas recursos del servidor
+      input.password = await bcryptjs.hash(password, salt);
+
+      //Guardar en la bdd
+      try {
+        const user = new User(input);
+        user.save();
+        return user; //Se retorna el usuario creado de la bdd con la forma del Schema
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    authenticateUser: async (_, { input }) => {
+      const { email, password } = input;
+
+      //Si el usuario existe
+      const existeUser = await User.findOne({ email });
+      if (!existeUser) {
+        throw new Error("El usuario no existe");
+      }
+
+      //Revisar si la  contraseña es correcta
+      const passwordSuccess = await bcryptjs.compare(
+        password,
+        existeUser.password
+      ); //Comparar una contra con la de la bdd con bcrypt
+
+      if (!passwordSuccess) {
+        throw new Error("Contraseña incorrecta");
+      }
+
+      //Crear el token
+      return {
+        token: createToken(existeUser, process.env.SECRETWORD, 24),
+      };
+    },
+
+    //PRODUCTS
+    newProduct: async (_, { input }) => {
+      try {
+        const product = new Product(input);
+
+        //Almacenar en la bdd
+        const resp = await product.save();
+        return resp;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+  },
+};
+
+module.exports = resolvers;
