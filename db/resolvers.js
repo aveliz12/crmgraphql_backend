@@ -13,11 +13,14 @@ const createToken = (user, wordSecret, expiresIn) => {
 //Resolvers
 const resolvers = {
   Query: {
+    //USERS
     getUser: async (_, { token }) => {
       const userId = await jwt.verify(token, process.env.SECRETWORD); //toma el token y verifica
 
       return userId;
     },
+
+    //PRODUCTS
     getProducts: async () => {
       try {
         const products = await Product.find({});
@@ -31,7 +34,7 @@ const resolvers = {
       const product = await Product.findById(id);
 
       if (!product) {
-        console.log("Prodcuto no encontrado");
+        console.log("Prodcuto no encontrado!!");
       }
 
       return product;
@@ -97,6 +100,34 @@ const resolvers = {
       } catch (error) {
         console.log(error);
       }
+    },
+    updateProducts: async (_, { id, input }) => {
+      //Revisar si el producto existe
+      let product = await Product.findById(id);
+
+      if (!product) {
+        throw new Error("El proucto no existe");
+      }
+
+      //si existe guardar en la bdd
+      product = await Product.findOneAndUpdate({ _id: id }, input, {
+        new: true,
+      }); //el findOneAndpdate encuentra el objeto y lo actualiza en ese momento
+      //new:true es para que se actualice y retorne el nuevo objeto
+
+      return product;
+    },
+    deleteProduct: async (_, { id }) => {
+      //comprobar si existe
+      const product = await Product.findById(id);
+
+      if (!product) {
+        throw new Error("El producto no existe");
+      }
+
+      //Eliminar producto en caso de que si exista
+      await Product.findByIdAndRemove({ _id: id });
+      return "Producto eliminado";
     },
   },
 };
