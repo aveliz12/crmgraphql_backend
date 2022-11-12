@@ -40,6 +40,38 @@ const resolvers = {
 
       return product;
     },
+
+    //CLIENTS
+    getAllClients: async () => {
+      try {
+        const clients = await Client.find({});
+        return clients;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    getClientsSeller: async (_, {}, ctx) => {
+      try {
+        const client = await Client.find({ seller: ctx.user.id.toString() });
+        return client;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    getClientsById: async (_, { id }, ctx) => {
+      //Revisar si el cliente existe
+      const client = await Client.findById(id);
+      if (!client) {
+        throw new Error("Cliente no encontrado");
+      }
+
+      //Puede verlo quien lo creo
+      if (client.seller.toString() !== ctx.user.id) {
+        throw new Error("No tienes las credenciales para cer este cliente");
+      }
+
+      return client;
+    },
   },
   Mutation: {
     //USERS
@@ -86,7 +118,7 @@ const resolvers = {
 
       //Crear el token
       return {
-        token: createToken(existeUser, process.env.SECRETWORD, '24h'),
+        token: createToken(existeUser, process.env.SECRETWORD, "24h"),
       };
     },
 
@@ -154,6 +186,38 @@ const resolvers = {
       } catch (error) {
         console.log(error);
       }
+    },
+    updateClient: async (_, { id, input }, ctx) => {
+      //Verificar si existe el client o no
+      let client = await Client.findById(id);
+      if (!client) {
+        throw new Error("El cliente no existe");
+      }
+      //Verificar si el vendedor es el que edita
+      if (client.seller.toString() !== ctx.user.id) {
+        throw new Error("No tiene permiso para editar este cliente");
+      }
+
+      //Guardar el cliente
+      client = await Client.findOneAndUpdate({ _id: id }, input, {
+        new: true,
+      });
+      return client;
+    },
+    deleteClient: async (_, { id }, ctx) => {
+      //Verificar si existe el client o no
+      let client = await Client.findById(id);
+      if (!client) {
+        throw new Error("El cliente no existe");
+      }
+      //Verificar si el vendedor es el que edita
+      if (client.seller.toString() !== ctx.user.id) {
+        throw new Error("No tiene permiso para eliminar este cliente");
+      }
+
+      //Eliminar
+      await Client.findOneAndDelete({ _id: id });
+      return "Cliente Eliminado";
     },
   },
 };
