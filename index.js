@@ -1,7 +1,9 @@
 const { ApolloServer } = require("apollo-server");
 const typeDefs = require("./db/schema");
 const resolvers = require("./db/resolvers");
-const connectDB=require("./config/db")
+const connectDB = require("./config/db");
+const jwt = require("jsonwebtoken");
+require("dotenv").config({ path: "../variables.env" });
 
 //Conectar a la BDD
 connectDB();
@@ -10,12 +12,19 @@ connectDB();
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: () => {
-    const myContext = "Hola";
-
-    return {
-      myContext,
-    };
+  context: ({ req }) => {
+    const token = req.headers['authorization'] || '';
+    if (token) {
+      try {
+        const user = jwt.verify(token, process.env.SECRETWORD);
+        return {
+          user
+        }
+      } catch (error) {
+        console.log("Hubo un error");
+        console.log(error);
+      }
+    }
   },
 });
 

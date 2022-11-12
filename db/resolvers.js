@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Product = require("../models/Product");
+const Client = require("../models/Client");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config({ path: "../variables.env" });
@@ -85,7 +86,7 @@ const resolvers = {
 
       //Crear el token
       return {
-        token: createToken(existeUser, process.env.SECRETWORD, 24),
+        token: createToken(existeUser, process.env.SECRETWORD, '24h'),
       };
     },
 
@@ -128,6 +129,31 @@ const resolvers = {
       //Eliminar producto en caso de que si exista
       await Product.findByIdAndRemove({ _id: id });
       return "Producto eliminado";
+    },
+
+    //CLIENTS
+    newClient: async (_, { input }, ctx) => {
+      console.log(ctx);
+
+      const { email } = input;
+
+      //Verificar si el cliente ya está reggistrado
+      const client = await Client.findOne({ email });
+      if (client) {
+        throw new Error("Cliente registrado");
+      }
+
+      const newC = new Client(input);
+      //Asignar vendedor
+      newC.seller = ctx.user.id;
+
+      //GUardar en la BDD
+      try {
+        const resul = await newC.save();
+        return resul;
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
 };
