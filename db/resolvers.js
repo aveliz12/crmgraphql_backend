@@ -74,7 +74,7 @@ const resolvers = {
     },
   },
   Mutation: {
-    //USERS
+    ///USERS///
     newUser: async (_, { input }) => {
       const { email, password } = input;
 
@@ -122,7 +122,7 @@ const resolvers = {
       };
     },
 
-    //PRODUCTS
+    ///PRODUCTS///
     newProduct: async (_, { input }) => {
       try {
         const product = new Product(input);
@@ -163,7 +163,7 @@ const resolvers = {
       return "Producto eliminado";
     },
 
-    //CLIENTS
+    ///CLIENTS///
     newClient: async (_, { input }, ctx) => {
       console.log(ctx);
 
@@ -218,6 +218,30 @@ const resolvers = {
       //Eliminar
       await Client.findOneAndDelete({ _id: id });
       return "Cliente Eliminado";
+    },
+
+    ///ORDERS///
+    newOrder: async (_, { input }, ctx) => {
+      const { client } = input;
+
+      //verificiar si el cliente existe o no
+      let clientExist = await Client.findById(client);
+
+      if (!clientExist) {
+        throw new Error("El cliente no existe.");
+      }
+
+      //Verificar si el cliente es el vendedor
+      if(clientExist.seller.toString()!==ctx.user.id){
+        throw new Error('No tienes las credenciales.')
+      }
+
+      //Revisar si el stock esta disponible
+      
+
+      //Asignar un vendedor
+
+      //Guardar en la BDD
     },
   },
 };
