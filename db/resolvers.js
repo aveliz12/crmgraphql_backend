@@ -3,6 +3,7 @@ const Product = require("../models/Product");
 const Client = require("../models/Client");
 const bcryptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const Order = require("../models/Order");
 require("dotenv").config({ path: "../variables.env" });
 
 const createToken = (user, wordSecret, expiresIn) => {
@@ -232,16 +233,36 @@ const resolvers = {
       }
 
       //Verificar si el cliente es el vendedor
-      if(clientExist.seller.toString()!==ctx.user.id){
-        throw new Error('No tienes las credenciales.')
+      if (clientExist.seller.toString() !== ctx.user.id) {
+        throw new Error("No tienes las credenciales.");
       }
 
       //Revisar si el stock esta disponible
-      
+      //Operador asincrono nuevo de node
+      for await (const article of input.order) {
+        const { id } = article;
+        const product = await Product.findById(id);
+
+        if (article.stock > product.stock) {
+          throw new Error(
+            `El artículo: ${product.name} excede a cantidad disponible.`
+          );
+        }else{ 
+          //restar cantidad de stock disponible en productos
+          product.stock=product.stock-article.stock;
+
+          await product.save();
+        }
+      }
+      //Crer un nuevo pedido
+      const newOrder = new Order(input);
 
       //Asignar un vendedor
+      newOrder.seller = ctx.user.id;
 
       //Guardar en la BDD
+      const result = await newOrder.save();
+      return result;
     },
   },
 };
