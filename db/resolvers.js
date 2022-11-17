@@ -73,6 +73,44 @@ const resolvers = {
 
       return client;
     },
+
+    //ORDERS
+    getOrder: async () => {
+      try {
+        const order = await Order.find();
+        return order;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    getOrderBySeller: async (_, {}, ctx) => {
+      try {
+        const order = await Order.find({ seller: ctx.user.id });
+        return order;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    getOrderById: async (_, { id }, ctx) => {
+      //Verificar si existe el pedido
+      const order = await Order.findById(id);
+
+      if (!order) {
+        throw new Error("Pedido no encontrado");
+      }
+
+      //Solo quien lo creó
+      if (order.seller.toString() !== ctx.user.id) {
+        throw new Error("No tiene permisos para obtener este vendedor");
+      }
+      //Retornar resultado
+      return order;
+    },
+    getOrderByStatus: async (_, { status }, ctx) => {
+      const order = await Order.find({ seller: ctx.user.id, status });
+
+      return order;
+    },
   },
   Mutation: {
     ///USERS///
@@ -247,9 +285,9 @@ const resolvers = {
           throw new Error(
             `El artículo: ${product.name} excede a cantidad disponible.`
           );
-        }else{ 
+        } else {
           //restar cantidad de stock disponible en productos
-          product.stock=product.stock-article.stock;
+          product.stock = product.stock - article.stock;
 
           await product.save();
         }
@@ -263,6 +301,70 @@ const resolvers = {
       //Guardar en la BDD
       const result = await newOrder.save();
       return result;
+    },
+    updateOrder: async (_, { id, input }, ctx) => {
+      const { client } = input;
+
+      //Verificar si el pedido existe
+      const existOrder = await Order.findById(id);
+      if (!existOrder) {
+        throw new Error("El pedido no existe");
+      }
+
+      //Verificar si el cliente existe
+      const existClient = await Client.findById(client);
+      if (!existClient) {
+        throw new Error("El cliente no existe");
+      }
+
+      //Verificar si el cliente y pedido pertenece al vendedor
+      if (existClient.seller.toString() !== ctx.user.id) {
+        throw new Error("No tienes las credenciales para realizar la acción");
+      }
+
+      //revisar el stock
+      if (input.order) {
+        //Operador asincrono nuevo de node
+        for await (const article of input.order) {
+          const { id } = article;
+          const product = await Product.findById(id);
+
+          if (article.stock > product.stock) {
+            throw new Error(
+              `El artículo: ${product.name} excede a cantidad disponible.`
+            );
+          } else {
+            //restar cantidad de stock disponible en productos
+            product.stock = product.stock - article.stock;
+
+            await product.save();
+          }
+        }
+      }
+
+      //Guardar pedido
+      const resp = await Order.findOneAndUpdate({ _id: id }, input, {
+        new: true,
+      });
+
+      return resp;
+    },
+    deleteOrder: async (_, { id }, ctx) => {
+      //Verificar si el pedido existe
+      const order = await Order.findById(id);
+
+      if (!order) {
+        throw new Error("El pedido no existe");
+      }
+
+      //verificar si el vendedor es quien intenta elminar
+      if (order.seller.toString() !== ctx.user.id) {
+        throw new Error("No tiene permisos para elminar el pedido");
+      }
+
+      //Eliminar de la bdd
+      await Order.findOneAndDelete({ _id: id });
+      return "Pedido Eliminado";
     },
   },
 };
