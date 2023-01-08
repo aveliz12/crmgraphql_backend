@@ -112,7 +112,7 @@ const typeDefs = gql`
   #CONSULTAS
   type Query {
     #Users
-    getUser(token: String!): User
+    getUser: User
 
     #Products
     getProducts: [Product]

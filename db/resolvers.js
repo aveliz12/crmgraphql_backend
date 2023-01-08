@@ -16,10 +16,9 @@ const createToken = (user, wordSecret, expiresIn) => {
 const resolvers = {
   Query: {
     //USERS
-    getUser: async (_, { token }) => {
-      const userId = await jwt.verify(token, process.env.SECRETWORD); //toma el token y verifica
-
-      return userId;
+    getUser: async (_, {}, ctx) => {
+      //const userId = await jwt.verify(token, process.env.SECRETWORD); //toma el token y verifica
+      return ctx.user;
     },
 
     //PRODUCTS
@@ -167,7 +166,9 @@ const resolvers = {
 
     //SEARCH PRODUCT
     searchProduct: async (_, { text }) => {
-      const products = await Product.find({ $text: { $search: text } }).limit(10);
+      const products = await Product.find({ $text: { $search: text } }).limit(
+        10
+      );
       return products;
     },
   },
