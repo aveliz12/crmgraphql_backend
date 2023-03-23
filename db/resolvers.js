@@ -341,13 +341,13 @@ const resolvers = {
         const { id } = article;
         const product = await Product.findById(id);
 
-        if (article.stock > product.stock) {
+        if (article.cantidad > product.stock) {
           throw new Error(
             `El artículo: ${product.name} excede a cantidad disponible.`
           );
         } else {
           //restar cantidad de stock disponible en productos
-          product.stock = product.stock - article.stock;
+          product.stock = product.stock - article.cantidad;
 
           await product.save();
         }

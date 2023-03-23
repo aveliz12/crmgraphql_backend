@@ -45,7 +45,7 @@ const typeDefs = gql`
 
   type OrderGroup {
     id: ID
-    stock: Int
+    cantidad: Int
   }
 
   type TopClient {
@@ -93,7 +93,7 @@ const typeDefs = gql`
 
   input OrderProductInput {
     id: ID
-    stock: Int
+    cantidad: Int
   }
 
   input OrderInput {
