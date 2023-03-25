@@ -46,6 +46,8 @@ const typeDefs = gql`
   type OrderGroup {
     id: ID
     cantidad: Int
+    name: String
+    cost: Float
   }
 
   type TopClient {
@@ -94,6 +96,8 @@ const typeDefs = gql`
   input OrderProductInput {
     id: ID
     cantidad: Int
+    name: String
+    cost: Float
   }
 
   input OrderInput {
