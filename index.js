@@ -13,12 +13,14 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   context: ({ req }) => {
-
     const token = req.headers["authorization"] || "";
     if (token) {
       try {
-        const user = jwt.verify(token.replace('Bearer ',''), process.env.SECRETWORD);
-        return {  
+        const user = jwt.verify(
+          token.replace("Bearer ", ""),
+          process.env.SECRETWORD
+        );
+        return {
           user,
         };
       } catch (error) {
@@ -30,6 +32,6 @@ const server = new ApolloServer({
 });
 
 //arrancar servidor
-server.listen().then(({ url }) => {
+server.listen({ port: process.env.PORT || 4000 }).then(({ url }) => {
   console.log(`Server running in the URL ${url}`);
 });
